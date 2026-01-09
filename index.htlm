@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TURF PRO - Pronostics Hippiques IA</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f0b429">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TURF PRO">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏇</text></svg>">
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏇</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #12171f;
+            --bg-tertiary: #1a212c;
+            --bg-card: #151c27;
+            --border: #2a3444;
+            --text-primary: #e6edf3;
+            --text-secondary: #8b949e;
+            --gold: #f0b429;
+            --gold-dark: #c99a1b;
+            --green: #2ea44f;
+            --green-light: #56d364;
+            --red: #f85149;
+            --orange: #db8b0b;
+            --blue: #58a6ff;
+            --purple: #a371f7;
+            --cyan: #39c5cf;
+        }
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+        
+        .nav {
+            background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .nav-content {
+            max-width: 1800px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .nav-brand-icon { font-size: 28px; }
+        .nav-brand-text {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+        .nav-brand-badge {
+            background: var(--purple);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .nav-tabs { display: flex; gap: 8px; }
+        .nav-tab {
+            padding: 10px 18px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-tab:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .nav-tab.active { background: var(--bg-tertiary); color: var(--gold); }
+        
+        .main-container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+        
+        .page { display: none; animation: fadeIn 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gold);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+        .grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+        @media (max-width: 1400px) { .grid-5 { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1200px) { .grid-2 { grid-template-columns: 1fr; } .grid-4 { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .grid-3, .grid-4, .grid-5 { grid-template-columns: 1fr; } .nav-tabs { display: none; } }
+        
+        textarea, input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-size: 13px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(240, 180, 41, 0.1);
+        }
+        textarea {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            min-height: 300px;
+            resize: vertical;
+            font-size: 11px;
+            line-height: 1.6;
+        }
+        label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--orange) 100%);
+            color: var(--bg-primary);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(240, 180, 41, 0.3); }
+        .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+        .btn-sm { padding: 8px 14px; font-size: 11px; }
+        .btn-lg { padding: 16px 32px; font-size: 15px; }
+        .btn-block { width: 100%; }
+        .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+        
+        .race-banner {
+            background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .race-banner h1 {
+            font-size: 20px;
+            color: var(--gold);
+            margin-bottom: 12px;
+        }
+        .race-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .race-meta span { display: flex; align-items: center; gap: 6px; }
+        .race-badges { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+        .race-badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge-discipline { background: rgba(88, 166, 255, 0.15); color: var(--blue); border: 1px solid rgba(88, 166, 255, 0.3); }
+        .badge-difficulty { background: rgba(163, 113, 247, 0.15); color: var(--purple); border: 1px solid rgba(163, 113, 247, 0.3); }
+        .badge-opportunity { background: rgba(240, 180, 41, 0.15); color: var(--gold); border: 1px solid rgba(240, 180, 41, 0.3); }
+        
+        .format-box {
+            background: var(--bg-primary);
+            border-radius: 10px;
+            padding: 14px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+        .format-box.success { border: 1px solid var(--green); color: var(--green-light); }
+        .format-box.error { border: 1px solid var(--red); color: var(--red); }
+        .format-box.info { border: 1px solid var(--blue); color: var(--blue); }
+        
+        .ferrure-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+        .ferrure-D4 { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .ferrure-PA-DP { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+        .ferrure-DP { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+        .ferrure-DA { background: linear-gradient(135deg, #06b6d4, #0891b2); color: white; }
+        .ferrure-P4 { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border); }
+        .ferrure-F4 { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border); }
+        
+        .signal-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .signal-COURAGE { background: rgba(46, 164, 79, 0.2); color: var(--green-light); }
+        .signal-RAS { background: rgba(139, 148, 158, 0.15); color: var(--text-secondary); }
+        .signal-INEXISTANT { background: rgba(248, 81, 73, 0.15); color: var(--red); }
+        .signal-INDISCIPLINE { background: rgba(219, 139, 11, 0.2); color: var(--orange); }
+        
+        .musique-container { display: flex; gap: 3px; flex-wrap: wrap; }
+        .musique-item {
+            width: 22px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            font-family: monospace;
+        }
+        .musique-1 { background: linear-gradient(135deg, var(--gold), var(--orange)); color: var(--bg-primary); }
+        .musique-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: var(--bg-primary); }
+        .musique-3 { background: linear-gradient(135deg, #c2956e, #92693c); color: var(--bg-primary); }
+        .musique-4, .musique-5 { background: var(--bg-tertiary); color: var(--text-secondary); }
+        .musique-D { background: rgba(248, 81, 73, 0.3); color: var(--red); }
+        .musique-0 { background: rgba(139, 148, 158, 0.2); color: var(--text-secondary); }
+        
+        .prono-box {
+            background: linear-gradient(135deg, rgba(46, 164, 79, 0.1) 0%, var(--bg-card) 100%);
+            border: 2px solid var(--green);
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 24px;
+        }
+        .prono-title {
+            text-align: center;
+            font-size: 20px;
+            color: var(--green-light);
+            margin-bottom: 24px;
+        }
+        .prono-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+        }
+        @media (max-width: 1200px) { .prono-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 600px) { .prono-grid { grid-template-columns: repeat(2, 1fr); } }
+        .prono-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px 14px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .prono-card:hover { transform: translateY(-4px); }
+        .prono-card.gold { border-color: var(--gold); background: linear-gradient(135deg, rgba(240, 180, 41, 0.12) 0%, rgba(0, 0, 0, 0.3) 100%); }
+        .prono-card .icon { font-size: 28px; margin-bottom: 8px; }
+        .prono-card .label { font-size: 10px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+        .prono-card .numero { font-size: 26px; font-weight: 800; color: var(--gold); }
+        .prono-card .name { font-size: 12px; font-weight: 600; color: var(--text-primary); margin: 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .prono-card .details { font-size: 11px; color: var(--text-secondary); }
+        
+        .strategy-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 1200px) { .strategy-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 600px) { .strategy-grid { grid-template-columns: 1fr; } }
+        .strategy-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 18px;
+        }
+        .strategy-box h3 { font-size: 13px; margin-bottom: 12px; }
+        .strategy-box.base { border-color: var(--green); }
+        .strategy-box.base h3 { color: var(--green-light); }
+        .strategy-box.poker { border-color: var(--purple); }
+        .strategy-box.poker h3 { color: var(--purple); }
+        .strategy-box.impasse { border-color: var(--red); }
+        .strategy-box.impasse h3 { color: var(--red); }
+        .strategy-box.combi { border-color: var(--blue); }
+        .strategy-box.combi h3 { color: var(--blue); }
+        .strategy-horse {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+        }
+        .strategy-horse .num {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            font-weight: 700;
+            color: var(--gold);
+        }
+        .strategy-horse .info { flex: 1; min-width: 0; }
+        .strategy-horse .name { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .strategy-horse .meta { font-size: 11px; color: var(--text-secondary); }
+        
+        .combi-line {
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .combi-type { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .combi-numbers { font-size: 16px; font-weight: 700; color: var(--gold); font-family: monospace; }
+        
+        .stat-card {
+            background: var(--bg-tertiary);
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+        }
+        .stat-value { font-size: 26px; font-weight: 700; color: var(--gold); }
+        .stat-label { font-size: 11px; color: var(--text-secondary); margin-top: 4px; text-transform: uppercase; }
+        
+        .table-container {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            background: var(--bg-tertiary);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gold);
+            position: sticky;
+            top: 0;
+            white-space: nowrap;
+        }
+        tr:hover { background: rgba(240, 180, 41, 0.03); }
+        .rank-cell { font-size: 16px; font-weight: 700; width: 50px; }
+        .rank-1 { color: var(--gold); }
+        .rank-2 { color: #94a3b8; }
+        .rank-3 { color: #c2956e; }
+        
+        .score-bar { display: flex; align-items: center; gap: 8px; }
+        .score-track { width: 70px; height: 8px; background: var(--bg-primary); border-radius: 4px; overflow: hidden; }
+        .score-fill { height: 100%; border-radius: 4px; }
+        .score-excellent { background: linear-gradient(90deg, var(--green), var(--green-light)); }
+        .score-good { background: linear-gradient(90deg, var(--orange), var(--gold)); }
+        .score-average { background: linear-gradient(90deg, #db6d28, var(--orange)); }
+        .score-low { background: linear-gradient(90deg, var(--red), #f87171); }
+        .score-value { font-weight: 700; font-size: 12px; min-width: 28px; }
+        
+        .elo-display { font-family: monospace; font-size: 12px; }
+        .elo-up { color: var(--green-light); }
+        .elo-down { color: var(--red); }
+        .elo-neutral { color: var(--text-secondary); }
+        
+        .cote-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            background: var(--bg-tertiary);
+            font-family: monospace;
+        }
+        .cote-fav { color: var(--red); }
+        .cote-mid { color: var(--orange); }
+        .cote-out { color: var(--green-light); }
+        
+        .comment-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .comment-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .comment-horse-num {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--gold);
+        }
+        .comment-horse-name { font-weight: 600; }
+        .comment-signal { margin-left: auto; }
+        .comment-text { font-size: 12px; color: var(--text-secondary); line-height: 1.7; white-space: pre-wrap; }
+        
+        .ai-box {
+            background: linear-gradient(135deg, rgba(163, 113, 247, 0.08) 0%, var(--bg-card) 100%);
+            border: 1px solid rgba(163, 113, 247, 0.3);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .ai-box h3 { color: var(--purple); margin-bottom: 16px; }
+        .ai-content { color: var(--text-primary); line-height: 1.8; white-space: pre-wrap; font-size: 14px; }
+        
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 20, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border: 3px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { color: var(--text-secondary); font-size: 14px; }
+        
+        .history-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .history-item:hover { border-color: var(--gold); }
+        .history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+        .history-name { font-weight: 600; }
+        .history-date { font-size: 12px; color: var(--text-secondary); }
+        .history-prono { display: flex; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--text-secondary); }
+        
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-secondary); }
+        .empty-state-icon { font-size: 50px; margin-bottom: 16px; opacity: 0.4; }
+        .empty-state-title { font-size: 18px; color: var(--text-primary); margin-bottom: 8px; }
+        
+        .info-tip {
+            background: rgba(88, 166, 255, 0.1);
+            border: 1px solid rgba(88, 166, 255, 0.2);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 13px;
+            color: var(--blue);
+            margin-bottom: 16px;
+        }
+
+        /* Mobile menu */
+        .mobile-tabs {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            padding: 8px;
+            z-index: 1000;
+        }
+        .mobile-tabs .nav-tabs {
+            display: flex;
+            justify-content: space-around;
+        }
+        @media (max-width: 768px) {
+            .mobile-tabs { display: block; }
+            .main-container { padding-bottom: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-content">
+            <div class="nav-brand">
+                <span class="nav-brand-icon">🏇</span>
+                <span class="nav-brand-text">TURF PRO</span>
+                <span class="nav-brand-badge">PromptBZH</span>
+            </div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="showPage('analyze')">📊 Analyse</button>
+                <button class="nav-tab" onclick="showPage('history')">📜 Historique</button>
+                <button class="nav-tab" onclick="showPage('settings')">⚙️ Config</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="mobile-tabs">
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showPage('analyze')">📊</button>
+            <button class="nav-tab" onclick="showPage('history')">📜</button>
+            <button class="nav-tab" onclick="showPage('settings')">⚙️</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Analyse en cours...</div>
+    </div>
+
+    <div class="main-container">
+        <!-- Page Analyse -->
+        <div class="page active" id="page-analyze">
+            <div class="race-banner" id="raceBanner" style="display: none;">
+                <h1 id="raceTitle">🏇 Course</h1>
+                <div class="race-meta" id="raceMeta"></div>
+                <div class="race-badges" id="raceBadges"></div>
+            </div>
+            
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📋 Données PromptBZH</h2>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-secondary" onclick="loadExample()">📝 Exemple</button>
+                            <button class="btn btn-sm btn-secondary" onclick="clearData()">🗑️</button>
+                        </div>
+                    </div>
+                    
+                    <div class="info-tip">
+                        💡 Collez le JSON complet de PromptBZH. Le parser extrait automatiquement toutes les données.
+                    </div>
+                    
+                    <div id="formatBox" class="format-box info" style="display: none;">
+                        <span id="formatIcon">ℹ️</span>
+                        <span id="formatText">En attente...</span>
+                    </div>
+                    
+                    <textarea id="raceData" placeholder='Collez ici le JSON PromptBZH...' oninput="detectFormat()"></textarea>
+                    
+                    <button class="btn btn-primary btn-lg btn-block" onclick="analyzeRace()" style="margin-top: 20px;">
+                        🔍 ANALYSER LA COURSE
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">⚙️ Configuration</h2>
+                    </div>
+                    
+                    <div style="margin-bottom: 24px;">
+                        <h3 style="font-size: 14px; color: var(--text-primary); margin-bottom: 12px;">⚖️ Pondération</h3>
+                        <div class="grid-3" style="gap: 10px;">
+                            <div><label>🎵 Musique</label><input type="number" id="w-musique" value="25" min="0" max="100"></div>
+                            <div><label>🔧 Ferrure</label><input type="number" id="w-ferrure" value="20" min="0" max="100"></div>
+                            <div><label>📊 ELO</label><input type="number" id="w-elo" value="20" min="0" max="100"></div>
+                            <div><label>💰 Cote</label><input type="number" id="w-cote" value="15" min="0" max="100"></div>
+                            <div><label>🏆 Jockey</label><input type="number" id="w-jockey" value="10" min="0" max="100"></div>
+                            <div><label>🔄 Fraîcheur</label><input type="number" id="w-fraicheur" value="10" min="0" max="100"></div>
+                        </div>
+                    </div>
+                    
+                    <div style="border-top: 1px solid var(--border); padding-top: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <h3 style="font-size: 14px;">🤖 Analyse IA Claude</h3>
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin: 0;">
+                                <input type="checkbox" id="useAI" style="width: auto;">
+                                <span style="font-size: 13px;">Activer</span>
+                            </label>
+                        </div>
+                        <div id="aiSection" style="display: none;">
+                            <label>Clé API</label>
+                            <input type="password" id="apiKey" placeholder="sk-ant-...">
+                        </div>
+                    </div>
+                    
+                    <div id="previewStats" style="border-top: 1px solid var(--border); padding-top: 20px; margin-top: 20px; display: none;">
+                        <h3 style="font-size: 14px; color: var(--gold); margin-bottom: 12px;">📊 Aperçu</h3>
+                        <div id="previewContent"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="resultsSection" style="display: none;">
+                <div class="ai-box" id="aiBox" style="display: none;">
+                    <h3>🤖 Analyse IA Claude</h3>
+                    <div class="ai-content" id="aiContent"></div>
+                </div>
+                
+                <div class="grid-4" id="statsRow" style="margin-bottom: 24px;"></div>
+                
+                <div class="prono-box">
+                    <h2 class="prono-title">🏆 PRONOSTIC TURF PRO</h2>
+                    <div class="prono-grid" id="pronoGrid"></div>
+                </div>
+                
+                <div class="strategy-grid" id="strategyGrid"></div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">📊 Classement</h2>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-secondary" onclick="copyProno()">📋 Copier</button>
+                            <button class="btn btn-sm btn-secondary" onclick="saveToHistory()">💾 Sauver</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rg</th>
+                                    <th>N°</th>
+                                    <th>Cheval</th>
+                                    <th>Ferrure</th>
+                                    <th>Musique</th>
+                                    <th>Cote</th>
+                                    <th>ELO</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTable"></tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="card" id="commentsCard" style="display: none;">
+                    <h2 class="card-title" style="margin-bottom: 16px;">📝 Commentaires</h2>
+                    <div id="commentsList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Page History -->
+        <div class="page" id="page-history">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📜 Historique</h2>
+                    <button class="btn btn-sm btn-secondary" onclick="clearHistory()">🗑️</button>
+                </div>
+                <div id="historyList"></div>
+            </div>
+        </div>
+        
+        <!-- Page Settings -->
+        <div class="page" id="page-settings">
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 20px;">🤖 API Claude</h2>
+                <div style="margin-bottom: 16px;">
+                    <label>Clé API Anthropic</label>
+                    <input type="password" id="settingsApiKey" placeholder="sk-ant-...">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label>Modèle</label>
+                    <select id="aiModel">
+                        <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                        <option value="claude-opus-4-20250514">Claude Opus 4</option>
+                    </select>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="saveSettings()">💾 Sauvegarder</button>
+                    <button class="btn btn-secondary" onclick="testAPI()">🔌 Tester</button>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 20px;">💾 Données</h2>
+                <div class="btn-group">
+                    <button class="btn btn-secondary" onclick="exportAll()">📤 Exporter</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 Importer</button>
+                    <input type="file" id="importFile" style="display:none" onchange="importAll(event)">
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2 class="card-title" style="margin-bottom: 16px;">ℹ️ À propos</h2>
+                <p style="color: var(--text-secondary); line-height: 1.7; font-size: 13px;">
+                    TURF PRO analyse les données PromptBZH pour générer des pronostics hippiques.<br><br>
+                    <strong>Compatible :</strong> PromptBZH, TurfBZH, format JSON/CSV<br><br>
+                    ⚠️ Les pronostics sont indicatifs. Jouez responsable.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let raceData = null;
+        let horses = [];
+        let results = [];
+        let aiText = '';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadHistory();
+            document.getElementById('useAI').addEventListener('change', function() {
+                document.getElementById('aiSection').style.display = this.checked ? 'block' : 'none';
+                if (this.checked) {
+                    const key = localStorage.getItem('turf_api_key');
+                    if (key) document.getElementById('apiKey').value = key;
+                }
+            });
+        });
+
+        function detectFormat() {
+            const text = document.getElementById('raceData').value.trim();
+            const box = document.getElementById('formatBox');
+            const icon = document.getElementById('formatIcon');
+            const txt = document.getElementById('formatText');
+            
+            if (!text) {
+                box.style.display = 'none';
+                document.getElementById('previewStats').style.display = 'none';
+                document.getElementById('raceBanner').style.display = 'none';
+                return;
+            }
+            
+            try {
+                const data = JSON.parse(text);
+                raceData = data;
+                
+                if (data.data_source?.csv_clean) {
+                    horses = parseCSV(data.data_source.csv_clean);
+                    if (data.data_source?.semantic_insights) {
+                        horses.forEach(h => {
+                            const insight = data.data_source.semantic_insights[h.nom];
+                            if (insight) { h.signal = insight.signal_majeur; h.tendance = insight.tendance; }
+                        });
+                    }
+                    box.style.display = 'flex';
+                    box.className = 'format-box success';
+                    icon.textContent = '✅';
+                    txt.textContent = `PromptBZH : ${horses.length} chevaux`;
+                    showPreview(data, horses);
+                    showRaceBanner(data);
+                } else { throw new Error('CSV non trouvé'); }
+            } catch (e) {
+                horses = parseSimple(text);
+                if (horses.length > 0) {
+                    box.style.display = 'flex';
+                    box.className = 'format-box success';
+                    icon.textContent = '✅';
+                    txt.textContent = `Format simple : ${horses.length} chevaux`;
+                    raceData = null;
+                    document.getElementById('raceBanner').style.display = 'none';
+                } else {
+                    box.style.display = 'flex';
+                    box.className = 'format-box error';
+                    icon.textContent = '❌';
+                    txt.textContent = 'Format non reconnu';
+                }
+                document.getElementById('previewStats').style.display = 'none';
+            }
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+            const headers = lines[0].split(';').map(h => h.trim());
+            const result = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(';');
+                const horse = {};
+                headers.forEach((h, idx) => {
+                    let val = (values[idx] || '').trim().replace(/&#039,/g, "'").replace(/&amp;/g, '&');
+                    horse[h] = val;
+                });
+                result.push({
+                    numero: horse['N°'] || '',
+                    nom: horse['Cheval'] || '',
+                    driver: horse['Driver'] || '',
+                    musique: horse['Musique'] || '',
+                    repos: parseFloat(horse['Repos(j)']) || 0,
+                    eloC: parseFloat(horse['ELO_C']) || 0,
+                    eloJ: parseFloat(horse['ELO_J']) || 0,
+                    rangJ: parseInt(horse['Rang_J']) || 0,
+                    diffVsLot: parseFloat(horse['Diff_vs_Lot']) || 0,
+                    cote: parseFloat(horse['Cote']) || 0,
+                    signal: horse['Signal_Tactique'] || 'RAS',
+                    ferrure: horse['Ferrure'] || '',
+                });
+            }
+            return result;
+        }
+
+        function parseSimple(text) {
+            const lines = text.split('\n').filter(l => l.trim());
+            const result = [];
+            for (const line of lines) {
+                const parts = line.split(/[|;\t]/).map(p => p.trim());
+                if (parts.length >= 2) {
+                    result.push({
+                        numero: parts[0].match(/\d+/)?.[0] || String(result.length + 1),
+                        nom: parts[1],
+                        cote: parseFloat(parts[2]) || 0,
+                        musique: parts[3] || '',
+                        driver: parts[4] || '',
+                        ferrure: '', repos: 0, eloC: 0, signal: 'RAS'
+                    });
+                }
+            }
+            return result;
+        }
+
+        function showRaceBanner(data) {
+            const ctx = data.context;
+            if (!ctx) return;
+            document.getElementById('raceBanner').style.display = 'block';
+            document.getElementById('raceTitle').innerHTML = `🏇 ${ctx.race_identity?.nom_prix || 'Course'}`;
+            document.getElementById('raceMeta').innerHTML = `
+                <span>📍 ${ctx.race_identity?.hippodrome || ''}</span>
+                <span>💰 ${ctx.race_identity?.allocation || ''}</span>
+                <span>🐴 ${ctx.race_identity?.partants || horses.length} partants</span>
+            `;
+            document.getElementById('raceBadges').innerHTML = `
+                <span class="race-badge badge-discipline">${ctx.race_identity?.discipline?.replace('_', ' ') || ''}</span>
+                ${ctx.market_psychology?.market_insight === 'OPPORTUNITE_OR' ? '<span class="race-badge badge-opportunity">💎 OPPORTUNITÉ</span>' : ''}
+            `;
+        }
+
+        function showPreview(data, horses) {
+            document.getElementById('previewStats').style.display = 'block';
+            const d4 = horses.filter(h => h.ferrure === 'D4').length;
+            const avgCote = (horses.reduce((a, h) => a + (h.cote || 10), 0) / horses.length).toFixed(1);
+            document.getElementById('previewContent').innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center;">
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 700; color: var(--green-light);">${d4}</div>
+                        <div style="font-size: 10px; color: var(--text-secondary);">D4</div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 700; color: var(--gold);">${avgCote}</div>
+                        <div style="font-size: 10px; color: var(--text-secondary);">Cote moy.</div>
+                    </div>
+                    <div style="padding: 12px; background: var(--bg-primary); border-radius: 8px;">
+                        <div style="font-size: 18px; font-weight: 700; color: var(--cyan);">${horses.filter(h => h.repos <= 21 && h.repos > 0).length}</div>
+                        <div style="font-size: 10px; color: var(--text-secondary);">Frais</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getWeights() {
+            return {
+                musique: parseFloat(document.getElementById('w-musique').value) || 25,
+                ferrure: parseFloat(document.getElementById('w-ferrure').value) || 20,
+                elo: parseFloat(document.getElementById('w-elo').value) || 20,
+                cote: parseFloat(document.getElementById('w-cote').value) || 15,
+                jockey: parseFloat(document.getElementById('w-jockey').value) || 10,
+                fraicheur: parseFloat(document.getElementById('w-fraicheur').value) || 10
+            };
+        }
+
+        function analyzeMusique(musique) {
+            if (!musique) return { score: 0.4, positions: [] };
+            const matches = musique.match(/(\d)/g) || [];
+            const positions = matches.map(p => parseInt(p)).slice(0, 5);
+            if (!positions.length) return { score: 0.4, positions: [] };
+            const weights = [0.35, 0.25, 0.20, 0.12, 0.08];
+            let score = 0;
+            positions.forEach((pos, i) => {
+                const pts = pos === 1 ? 100 : pos === 2 ? 85 : pos === 3 ? 70 : pos === 4 ? 55 : pos === 5 ? 45 : pos === 0 ? 30 : 15;
+                score += pts * (weights[i] || 0.05);
+            });
+            return { score: score / 100, positions };
+        }
+
+        function scoreFerrure(f) {
+            return { 'D4': 1.0, 'PA-DP': 0.85, 'DP': 0.75, 'DA': 0.65, 'P4': 0.4, 'F4': 0.3 }[f] || 0.3;
+        }
+
+        function scoreFraicheur(r) {
+            if (r <= 0) return 0.5;
+            if (r >= 7 && r <= 21) return 1.0;
+            if (r >= 22 && r <= 35) return 0.8;
+            if (r >= 36 && r <= 50) return 0.6;
+            if (r < 7) return 0.7;
+            return 0.4;
+        }
+
+        function calculateScore(horse, weights, eloMoyen) {
+            const total = Object.values(weights).reduce((a, b) => a + b, 0);
+            let score = 0;
+            let tags = [];
+            const mus = analyzeMusique(horse.musique);
+            score += mus.score * weights.musique;
+            if (mus.score > 0.75) tags.push({ text: '🔥 Top forme', type: 'positive' });
+            else if (mus.score < 0.45) tags.push({ text: '📉 Forme -', type: 'negative' });
+            const fer = scoreFerrure(horse.ferrure);
+            score += fer * weights.ferrure;
+            if (horse.ferrure === 'D4') tags.push({ text: '⚡ D4', type: 'positive' });
+            else if (horse.ferrure === 'PA-DP') tags.push({ text: '🔧 PA-DP', type: 'positive' });
+            if (horse.eloC > 0 && eloMoyen > 0) {
+                const eloScore = Math.min(1, Math.max(0, 0.5 + (horse.eloC - eloMoyen) / 100));
+                score += eloScore * weights.elo;
+                if (horse.diffVsLot > 10) tags.push({ text: '📈 ELO+', type: 'positive' });
+            } else { score += 0.5 * weights.elo; }
+            if (horse.cote > 0) {
+                const coteScore = Math.max(0, 1 - (horse.cote - 1) / 35);
+                score += coteScore * weights.cote;
+                if (horse.cote < 4) tags.push({ text: '💰 Favori', type: 'neutral' });
+                else if (horse.cote > 15) tags.push({ text: '💎 Outsider', type: 'neutral' });
+            }
+            if (horse.eloJ > 0) {
+                score += Math.min(1, horse.eloJ / 1600) * weights.jockey;
+                if (horse.rangJ <= 10) tags.push({ text: '🏆 Top Driver', type: 'positive' });
+            } else { score += 0.5 * weights.jockey; }
+            score += scoreFraicheur(horse.repos) * weights.fraicheur;
+            if (horse.repos > 0 && horse.repos <= 21) tags.push({ text: '✨ Frais', type: 'positive' });
+            if (horse.signal === 'COURAGE') tags.push({ text: '💪', type: 'positive' });
+            else if (horse.signal?.includes('INEXISTANT')) tags.push({ text: '👻', type: 'negative' });
+            return { score: Math.min(100, Math.max(0, Math.round((score / total) * 100))), tags };
+        }
+
+        async function analyzeRace() {
+            if (!horses.length) { detectFormat(); if (!horses.length) { alert('⚠️ Aucun cheval'); return; } }
+            showLoading('Analyse...');
+            try {
+                const weights = getWeights();
+                const eloMoyen = raceData?.context?.lot_statistics?.elo_moyen || (horses.reduce((a, h) => a + (h.eloC || 0), 0) / horses.length);
+                results = horses.map(h => ({ ...h, ...calculateScore(h, weights, eloMoyen) }));
+                results.sort((a, b) => b.score - a.score);
+                aiText = '';
+                if (document.getElementById('useAI').checked) {
+                    try {
+                        setLoadingText('Analyse IA...');
+                        aiText = await callClaude(horses, results, raceData);
+                    } catch (e) { aiText = `⚠️ ${e.message}`; }
+                }
+                displayResults();
+            } catch (e) { alert('❌ ' + e.message); }
+            finally { hideLoading(); }
+        }
+
+        async function callClaude(horses, results, data) {
+            const key = document.getElementById('apiKey').value || localStorage.getItem('turf_api_key');
+            if (!key) throw new Error('Clé API manquante');
+            const ctx = data?.context?.race_identity;
+            const prompt = `Expert courses hippiques. Analyse cette course.\n\nCOURSE: ${ctx?.nom_prix || ''} - ${ctx?.hippodrome || ''}\n\nTOP 5:\n${results.slice(0, 5).map(h => `N°${h.numero} ${h.nom} | Cote: ${h.cote} | Ferrure: ${h.ferrure} | Score: ${h.score}/100`).join('\n')}\n\nDonne (150 mots max):\n1. BASE SOLIDE\n2. OUTSIDER\n3. IMPASSE\n4. QUINTÉ en ordre`;
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                body: JSON.stringify({ model: localStorage.getItem('turf_ai_model') || 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: prompt }] })
+            });
+            if (!resp.ok) throw new Error((await resp.json()).error?.message || 'Erreur API');
+            return (await resp.json()).content[0].text;
+        }
+
+        function displayResults() {
+            const aiBox = document.getElementById('aiBox');
+            if (aiText) { document.getElementById('aiContent').textContent = aiText; aiBox.style.display = 'block'; }
+            else { aiBox.style.display = 'none'; }
+            const d4 = results.filter(h => h.ferrure === 'D4').length;
+            const avgScore = Math.round(results.reduce((a, h) => a + h.score, 0) / results.length);
+            const gap = results[0].score - (results[1]?.score || 0);
+            document.getElementById('statsRow').innerHTML = `
+                <div class="stat-card"><div class="stat-value">${results.length}</div><div class="stat-label">Partants</div></div>
+                <div class="stat-card"><div class="stat-value">${d4}</div><div class="stat-label">D4</div></div>
+                <div class="stat-card"><div class="stat-value">${avgScore}</div><div class="stat-label">Score moy.</div></div>
+                <div class="stat-card"><div class="stat-value">+${gap}</div><div class="stat-label">Écart 1er</div></div>
+            `;
+            const outsiders = results.filter(h => (h.cote || 10) > 10 && h.score > 40);
+            outsiders.sort((a, b) => b.score - a.score);
+            const outsider = outsiders[0] || results[Math.min(5, results.length - 1)];
+            document.getElementById('pronoGrid').innerHTML = results.slice(0, 4).map((h, i) => `
+                <div class="prono-card ${i === 0 ? 'gold' : ''}">
+                    <div class="icon">${['🥇','🥈','🥉','4️⃣'][i]}</div>
+                    <div class="label">${['Gagnant','2ème','3ème','4ème'][i]}</div>
+                    <div class="numero">${h.numero}</div>
+                    <div class="name">${h.nom}</div>
+                    <div class="details">${h.score}/100 • ${h.cote || '?'}</div>
+                </div>
+            `).join('') + `<div class="prono-card"><div class="icon">💎</div><div class="label">Outsider</div><div class="numero">${outsider.numero}</div><div class="name">${outsider.nom}</div><div class="details">${outsider.score}/100 • ${outsider.cote || '?'}</div></div>`;
+            const base = results[0];
+            const poker = outsiders[0] || results[4];
+            const impasse = results.find(h => (h.cote || 10) < 5 && h.score < results[2].score);
+            document.getElementById('strategyGrid').innerHTML = `
+                <div class="strategy-box base"><h3>🏆 BASE</h3><div class="strategy-horse"><div class="num">${base.numero}</div><div class="info"><div class="name">${base.nom}</div><div class="meta">${base.ferrure ? renderFerrure(base.ferrure) : ''} ${base.score}/100</div></div></div></div>
+                <div class="strategy-box poker"><h3>⚡ COUP</h3><div class="strategy-horse"><div class="num">${poker?.numero || '-'}</div><div class="info"><div class="name">${poker?.nom || '-'}</div><div class="meta">Cote: ${poker?.cote || '?'}</div></div></div></div>
+                <div class="strategy-box impasse"><h3>🛑 IMPASSE</h3><div class="strategy-horse"><div class="num">${impasse?.numero || '-'}</div><div class="info"><div class="name">${impasse?.nom || 'Aucun'}</div><div class="meta">${impasse ? `Cote ${impasse.cote} / Score ${impasse.score}` : ''}</div></div></div></div>
+                <div class="strategy-box combi"><h3>🎯 COMBIS</h3><div class="combi-line"><div class="combi-type">Tiercé</div><div class="combi-numbers">${results.slice(0, 3).map(h => h.numero).join(' - ')}</div></div><div class="combi-line"><div class="combi-type">Quinté</div><div class="combi-numbers">${results.slice(0, 5).map(h => h.numero).join(' - ')}</div></div></div>
+            `;
+            document.getElementById('resultsTable').innerHTML = results.map((h, i) => {
+                const rankClass = i < 3 ? `rank-${i + 1}` : '';
+                const emoji = ['🥇','🥈','🥉'][i] || (i + 1);
+                const scoreClass = h.score >= 70 ? 'score-excellent' : h.score >= 55 ? 'score-good' : h.score >= 40 ? 'score-average' : 'score-low';
+                const coteClass = (h.cote || 10) < 5 ? 'cote-fav' : (h.cote || 10) > 12 ? 'cote-out' : 'cote-mid';
+                return `<tr>
+                    <td class="rank-cell ${rankClass}">${emoji}</td>
+                    <td><strong>${h.numero}</strong></td>
+                    <td><strong>${h.nom}</strong></td>
+                    <td>${renderFerrure(h.ferrure)}</td>
+                    <td>${renderMusique(h.musique)}</td>
+                    <td><span class="cote-badge ${coteClass}">${h.cote || '?'}</span></td>
+                    <td>${renderElo(h.eloC, h.diffVsLot)}</td>
+                    <td><div class="score-bar"><div class="score-track"><div class="score-fill ${scoreClass}" style="width:${h.score}%"></div></div><span class="score-value">${h.score}</span></div></td>
+                </tr>`;
+            }).join('');
+            const comments = raceData?.data_source?.raw_comments_proof || {};
+            const hasComments = results.slice(0, 5).some(h => comments[h.nom]);
+            if (hasComments) {
+                document.getElementById('commentsCard').style.display = 'block';
+                document.getElementById('commentsList').innerHTML = results.slice(0, 5).filter(h => comments[h.nom]).map(h => `
+                    <div class="comment-card"><div class="comment-header"><span class="comment-horse-num">${h.numero}</span><span class="comment-horse-name">${h.nom}</span></div><div class="comment-text">${(comments[h.nom] || '').replace(/\|/g, '\n')}</div></div>
+                `).join('');
+            } else { document.getElementById('commentsCard').style.display = 'none'; }
+            document.getElementById('resultsSection').style.display = 'block';
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function renderMusique(m) {
+            if (!m) return '-';
+            const matches = m.match(/(\d)([a-zA-Z])?/g) || [];
+            return '<div class="musique-container">' + matches.slice(0, 5).map(x => {
+                const p = x.charAt(0);
+                const cls = p === '1' ? 'musique-1' : p === '2' ? 'musique-2' : p === '3' ? 'musique-3' : p === '0' ? 'musique-0' : parseInt(p) > 6 ? 'musique-D' : 'musique-4';
+                return `<span class="musique-item ${cls}">${p}</span>`;
+            }).join('') + '</div>';
+        }
+        function renderFerrure(f) { return f ? `<span class="ferrure-badge ferrure-${f}">${f}</span>` : '-'; }
+        function renderElo(e, d) {
+            if (!e) return '-';
+            const cls = d > 10 ? 'elo-up' : d < -20 ? 'elo-down' : 'elo-neutral';
+            return `<span class="elo-display ${cls}">${Math.round(e)}${d > 10 ? '↑' : d < -20 ? '↓' : ''}</span>`;
+        }
+
+        function saveToHistory() {
+            if (!results.length) return alert('Rien à sauver');
+            const history = JSON.parse(localStorage.getItem('turf_history') || '[]');
+            const name = raceData?.context?.race_identity?.nom_prix || 'Course ' + new Date().toLocaleDateString('fr-FR');
+            history.unshift({ id: Date.now(), date: new Date().toISOString(), name, results, aiText, rawData: document.getElementById('raceData').value });
+            if (history.length > 30) history.pop();
+            localStorage.setItem('turf_history', JSON.stringify(history));
+            alert('✅ Sauvegardé');
+        }
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('turf_history') || '[]');
+            const container = document.getElementById('historyList');
+            if (!history.length) { container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📭</div><div class="empty-state-title">Aucun historique</div></div>'; return; }
+            container.innerHTML = history.map(e => `<div class="history-item" onclick="loadFromHistory(${e.id})"><div class="history-header"><span class="history-name">${e.name}</span><span class="history-date">${new Date(e.date).toLocaleDateString('fr-FR')}</span></div><div class="history-prono">${e.results.slice(0, 3).map((h, i) => `<span>${['🥇','🥈','🥉'][i]} ${h.nom}</span>`).join('')}</div></div>`).join('');
+        }
+        function loadFromHistory(id) {
+            const entry = JSON.parse(localStorage.getItem('turf_history') || '[]').find(e => e.id === id);
+            if (!entry) return;
+            document.getElementById('raceData').value = entry.rawData || '';
+            showPage('analyze');
+            document.querySelectorAll('.nav-tab').forEach((t, i) => t.classList.toggle('active', i === 0));
+            detectFormat();
+        }
+        function clearHistory() { if (confirm('Effacer?')) { localStorage.removeItem('turf_history'); loadHistory(); } }
+
+        function loadSettings() {
+            const key = localStorage.getItem('turf_api_key');
+            const model = localStorage.getItem('turf_ai_model');
+            if (key) document.getElementById('settingsApiKey').value = key;
+            if (model) document.getElementById('aiModel').value = model;
+        }
+        function saveSettings() {
+            localStorage.setItem('turf_api_key', document.getElementById('settingsApiKey').value);
+            localStorage.setItem('turf_ai_model', document.getElementById('aiModel').value);
+            alert('✅ Sauvegardé');
+        }
+        async function testAPI() {
+            const key = document.getElementById('settingsApiKey').value;
+            if (!key) return alert('Entrez une clé');
+            showLoading('Test...');
+            try {
+                const resp = await fetch('https://api.anthropic.com/v1/messages', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content: 'Test' }] })
+                });
+                alert(resp.ok ? '✅ OK' : '❌ Erreur');
+                if (resp.ok) localStorage.setItem('turf_api_key', key);
+            } catch (e) { alert('❌ ' + e.message); }
+            finally { hideLoading(); }
+        }
+
+        function copyProno() {
+            if (!results.length) return;
+            const name = raceData?.context?.race_identity?.nom_prix || 'Course';
+            const txt = `🏇 TURF PRO - ${name}\n${'━'.repeat(25)}\n${results.slice(0, 5).map((h, i) => `${['🥇','🥈','🥉','4️⃣','5️⃣'][i]} N°${h.numero} ${h.nom}`).join('\n')}\n${'━'.repeat(25)}\nQuinté: ${results.slice(0, 5).map(h => h.numero).join('-')}`;
+            navigator.clipboard.writeText(txt).then(() => alert('✅ Copié'));
+        }
+        function exportAll() {
+            const data = { history: JSON.parse(localStorage.getItem('turf_history') || '[]'), settings: { apiKey: localStorage.getItem('turf_api_key'), model: localStorage.getItem('turf_ai_model') } };
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })); a.download = 'turf_backup.json'; a.click();
+        }
+        function importAll(e) {
+            const file = e.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if (data.history) localStorage.setItem('turf_history', JSON.stringify(data.history));
+                    if (data.settings?.apiKey) localStorage.setItem('turf_api_key', data.settings.apiKey);
+                    alert('✅ Importé'); location.reload();
+                } catch (err) { alert('❌ ' + err.message); }
+            };
+            reader.readAsText(file);
+        }
+
+        function showPage(name) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`page-${name}`).classList.add('active');
+            document.querySelectorAll(`.nav-tab`).forEach(t => { if (t.textContent.toLowerCase().includes(name.substring(0, 4))) t.classList.add('active'); });
+            if (name === 'history') loadHistory();
+        }
+        function showLoading(t) { document.getElementById('loadingText').textContent = t; document.getElementById('loadingOverlay').classList.add('show'); }
+        function setLoadingText(t) { document.getElementById('loadingText').textContent = t; }
+        function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
+        function loadExample() {
+            document.getElementById('raceData').value = `{"meta":{"version":"PromptBZH v9.0"},"context":{"race_identity":{"hippodrome":"VINCENNES","nom_prix":"PRIX DE GUERLESQUIN","discipline":"TROT_ATTELE","allocation":"35 000 €","partants":10},"market_psychology":{"market_insight":"OPPORTUNITE_OR"},"lot_statistics":{"elo_moyen":1466}},"data_source":{"csv_clean":"N°;Cheval;Driver;Entraineur;Age;Sexe;Musique;Repos(j);Gain_Moy;Proba_Win%;ELO_C;Sigma;ELO_J;Rang_J;ELO_E;Synergy;Diff_vs_Lot;Cote;Signal_Tactique;Forme_Mentale;Score_IA;Ferrure;Record_Dist\\n1;MAHRANA DU HAUTY;O. BIZOUX;O. BIZOUX;4;F;0a6a9a6a7a5a5a4aDa;31;586;1.9;1455;52.5;1481;550;1498;100;-31;81;INEXISTANT;STABLE;9.5;F4;78\\n2;MELODY DE LEPINE;L. CUEFF;J.G. VAN EECKHAUTE;4;F;5a4a0aDa6a6a2a5a6a;11;823;1.6;1449;50.5;1456;459;1493;99;-37;31;RAS;INCONNU;10;D4;78.1\\n3;MAMMA MIA DE LOU;A. LHERETE;Antoine LHERETE;4;F;DaDa1a2aDa6aDm5m;15;1404;11.6;1462;41.2;1531;153;1491;102;-24;7.8;RAS;STABLE;13.5;D4;76.4\\n4;MUSE DE BEYLEV;M. MOTTIER;CH. CUILLER;4;F;4a3a3aDaDm1aDaDa;15;1594;12.1;1422;44.9;1530;6;1504;101;-64;5.4;INEXISTANT;STABLE;14.8;PA-DP;76.1\\n5;MADEMOISELLE JOLIE;A. COLLETTE;P.Edouard MARY;4;F;Da3aDa2a5a2aDaDa;11;1681;13.2;1486;40.3;1510;24;1487;102;0;6.9;COURAGE;STABLE;14.2;PA-DP;\\n6;MAITIKA DE PEBRISY;N. BAZIRE;J. BLAVETTE;4;F;6a4a2a7a2aDaDa3a;17;1859;15.6;1477;41.2;1492;30;1483;101;-9;6.1;COURAGE;STABLE;15.3;DP;76.4\\n7;MANHATTAN DAMER;E. RAFFIN;Ch. DREUX;4;F;3a2aDa2a2a4aDa;15;2241;39.8;1495;40.1;1541;1;1516;104;9;2.2;RAS;INCONNU;17.8;PA-DP;75.6\\n8;MAYA PONT VAUTIER;ANTHONY DOLLION;Anthony DOLLION;4;F;Da5a2a3a1a;35;3200;19.9;1491;35.8;1484;179;1489;101;5;11;RAS;STABLE;14;D4;77.4\\n9;METALLICA SMART;G. GELORMINI;A. CHAVATTE;4;F;1a6a1aDa4a;28;3245;18.1;1441;33.3;1523;10;1513;101;-45;3.1;RAS;STABLE;16.5;D4;77.2\\n10;MAELYS DES BORDES;A. ANDRE;L. LERENARD;4;F;4a1a3aDa1a;30;3305;5.5;1484;36.5;1474;62;1482;101;-2;15;INDISCIPLINE;STABLE;13.2;P4;79.1","semantic_insights":{"MADEMOISELLE JOLIE":{"signal_majeur":"COURAGE"},"MAITIKA DE PEBRISY":{"signal_majeur":"COURAGE"}},"raw_comments_proof":{"MANHATTAN DAMER":"[25/12]: Vite au commandement, a gardé le contrôle.","METALLICA SMART":"[12/12]: S est montrée la plus forte au sprint."}}}`;
+            detectFormat();
+        }
+        function clearData() {
+            document.getElementById('raceData').value = '';
+            horses = []; results = []; raceData = null;
+            document.getElementById('resultsSection').style.display = 'none';
+            document.getElementById('raceBanner').style.display = 'none';
+            document.getElementById('formatBox').style.display = 'none';
+            document.getElementById('previewStats').style.display = 'none';
+        }
+    </script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(e => console.log('SW:', e));
+        }
+    </script>
+</body>
+</html>
